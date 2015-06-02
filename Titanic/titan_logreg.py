@@ -3,6 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import precision_recall_fscore_support
+from sklearn.metrics import precision_recall_curve
 
 
 df = pd.read_csv("c:\\Users\\Basov_il\\Documents\\GitHub\\ML-tasks\\Titanic\\titanic_train.csv")
@@ -72,10 +73,24 @@ for i in range(2,len(x_train)):
     e_train.append(1-clf.score(x_t,y_t))
     e_test.append(1-clf.score(x_test,y_test))
     sizes.append(i)
-plt.plot(sizes, e_train)
-plt.plot(sizes, e_test)
-fscores = precision_recall_fscore_support(y_test, clf.predict(x_test), average='micro')
+##plt.plot(sizes, e_train)
+##plt.plot(sizes, e_test)
+
+y_predict_proba = clf.predict_proba(x_test)[:,1]
+precision, recall, thresholds = precision_recall_curve(y_test, y_predict_proba)
+max_fscore=0
+maxth = 0
+for i in range(0, len(precision)):
+    fscore = precision[i]*recall[i]/(precision[i]+recall[i])
+    if fscore > max_fscore:
+        max_fscore=fscore
+        maxth = thresholds[i]
+y_predict = y_predict_proba>=maxth
+print("F-score: %s, thres: %s"%(max_fscore*2,maxth))
+fscores = precision_recall_fscore_support(y_test, y_predict, average='micro')
+
+plt.plot(recall, precision)
 print(fscores)
 for i in range(0,len(x.columns)):
     print("%s - %s"%(x.columns[i], clf.coef_[0][i]))
-plt.show()
+##plt.show()
