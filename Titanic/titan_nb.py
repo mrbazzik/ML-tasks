@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import precision_recall_fscore_support
-from sklearn.metrics import precision_recall_curve
+from sklearn.metrics import precision_recall_curve, auc
 from sklearn.naive_bayes import GaussianNB
 
 
@@ -91,6 +91,7 @@ print("F-score: %s, thres: %s"%(max_fscore*2,maxth))
 fscores = precision_recall_fscore_support(y_test, y_predict, average='micro')
 
 plt.plot(recall, precision)
+print("auc=%s"%(auc(recall,precision)))
 print(fscores)
 ##for i in range(0,len(x.columns)):
 ##    print("%s - %s"%(x.columns[i], clf.coef_[0][i]))
