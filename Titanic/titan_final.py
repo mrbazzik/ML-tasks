@@ -1,12 +1,11 @@
 ﻿import scipy as sp
 import pandas as pd
 import matplotlib.pyplot as plt
-from sklearn.linear_model import LogisticRegression, LogisticRegressionCV
-from sklearn.metrics import precision_recall_fscore_support, precision_recall_curve, auc
+from sklearn.linear_model import LogisticRegression, LogisticRegressionCV, LinearRegression
+from sklearn.metrics import precision_recall_fscore_support, precision_recall_curve, auc,confusion_matrix
 from sklearn.cross_validation import KFold
 from sklearn.ensemble import RandomForestClassifier
 from sklearn import grid_search, cross_validation
-
 
 df = pd.read_csv("c:\\Users\\Basov_il\\Documents\\GitHub\\ML-tasks\\Titanic\\titanic_train.csv")
 df = df.loc[~pd.isnull(df.Embarked),:]
@@ -22,12 +21,7 @@ x['SexN'] = [1]*len(x)
 x.loc[x.Sex=='male','SexN']=2
 x = x.drop("Sex",1)
 
-x['AgeFill'] = df.Age
-for i in range(0,3):
-    for j in range(0,2):
-        x.loc[(x.AgeFill.isnull()) & (x.Pclass==(i+1)) & (x.SexN==(j+1)),'AgeFill'] = x.loc[(x.Pclass==(i+1)) & (x.SexN==(j+1)),'AgeFill'].dropna().mean()
-x=x.drop('Age',1)
-                                                                                                
+                                                                                         
 
 x['EmbarkedN'] = [1]*len(x)
 x.loc[x.Embarked=='Q','EmbarkedN']=2
@@ -65,80 +59,92 @@ x = x.drop("Name",1)
 x['ClassFare']=x['Pclass']*x['Fare']
 x['SexParch']=x['SexN']*x['Parch']
 x['SexClass']=x['SexN']*x['Pclass']
-##x['SexCall']=x['SexN']*x['Call']
-##x['ClassCall']=x['Pclass']*x['Call']
-##x['CallParch']=x['Call']*x['Parch']
 
-##x['MrsParch']=x['Mrs']*x['Parch']
-##x['MrsSibSp']=x['Mrs']*x['SibSp']
+nullAge = x.Age.isnull()
+x_Age_train = x.loc[~nullAge,:].drop('Age',1)
+y_Age_train = x.Age.loc[~nullAge]
+x_predict = x.loc[nullAge,:].drop('Age',1)
+clf = LinearRegression()
+clf.fit(x_Age_train, y_Age_train)
+x['AgeFill'] = x.Age
+x.AgeFill.loc[nullAge] = clf.predict(x_predict)
+x = x.drop('Age',1)
+y = df.loc[:,"Survived"]
 
-##x['SexCallClass']=x['SexN']*x['Call']*x['Pclass']
 
-##x['AgeClass']=x['Age']*x['Pclass']
-##x['Family']=x['Parch']+x['SibSp']
-##x['SexAge']=x['SexN']*x['Age']
+
+females=x.SexN==1
+xf = x.loc[females,:].drop(['SexN','SexClass','SexParch','Mr','Master','Rev'],1)
+yf = y.loc[females]
+
+males=x.SexN==2
+xm = x.loc[males,:].drop(['SexN','SexClass','SexParch','Miss','Mrs'],1)
+ym = y.loc[males]
+
 x = (x-sp.mean(x))/sp.std(x)
+xf = (xf-sp.mean(xf))/sp.std(xf)
+xm = (xm-sp.mean(xm))/sp.std(xm)
 
 
-##n_train = 500
-##x_train = x.iloc[:n_train,:]
-##y_train = y.iloc[:n_train]
-##x_test = x.iloc[n_train:,:]
-##y_test = y.iloc[n_train:]
+clf = LogisticRegressionCV()
 
-##x_test = x_test[~pd.isnull(x_test.Age)]
-##y_test = y_test[~pd.isnull(x_test.Age)]
+print("Females:")
+cv = KFold(n=len(xf), n_folds=10)
+prec = {'S0':[],'S1':[]}
+rec = {'S0':[],'S1':[]}
+for train, test in cv:
+    x_train, y_train = xf.iloc[train,:], yf.iloc[train]
+    x_test, y_test = xf.iloc[test,:], yf.iloc[test]
+    clf.fit(x_train, y_train)
+    y_p=clf.predict(x_test)
+    cm = confusion_matrix(y_test, y_p)
+    prec['S0'].append(cm[0,0]/(cm[0,0]+cm[1,0]))
+    prec['S1'].append(cm[1,1]/(cm[0,1]+cm[1,1]))
+    rec['S0'].append(cm[0,0]/(cm[0,0]+cm[0,1]))
+    rec['S1'].append(cm[1,1]/(cm[1,0]+cm[1,1]))
+print("For 0:")
+print("Prec = %s, Rec = %s"%(sp.mean(prec['S0']), sp.mean(rec['S0'])))
+print("For 1:")
+print("Prec = %s, Rec = %s"%(sp.mean(prec['S1']), sp.mean(rec['S1'])))
 
+
+print("Males:")
+cv = KFold(n=len(xm), n_folds=10)
+prec = {'S0':[],'S1':[]}
+rec = {'S0':[],'S1':[]}
+for train, test in cv:
+    x_train, y_train = xm.iloc[train,:], ym.iloc[train]
+    x_test, y_test = xm.iloc[test,:], ym.iloc[test]
+    clf.fit(x_train, y_train)
+    y_p=clf.predict(x_test)
+    cm = confusion_matrix(y_test, y_p)
+    prec['S0'].append(cm[0,0]/(cm[0,0]+cm[1,0]))
+    prec['S1'].append(cm[1,1]/(cm[0,1]+cm[1,1]))
+    rec['S0'].append(cm[0,0]/(cm[0,0]+cm[0,1]))
+    rec['S1'].append(cm[1,1]/(cm[1,0]+cm[1,1]))
+print("For 0:")
+print("Prec = %s, Rec = %s"%(sp.mean(prec['S0']), sp.mean(rec['S0'])))
+print("For 1:")
+print("Prec = %s, Rec = %s"%(sp.mean(prec['S1']), sp.mean(rec['S1'])))
+
+
+print("Common:")
 cv = KFold(n=len(x), n_folds=10)
-clf = LogisticRegression()
-c_range = sp.logspace(-5,4,10)
-##clfgs = grid_search.GridSearchCV(clf,{'C':c_range})
-clfgs = LogisticRegressionCV()
-
-forest = RandomForestClassifier(n_estimators=100)
-scores_reg = []
-aucs_reg=[]
-scores_for = []
-aucs_for=[]
-scores = []
-aucs=[]
+prec = {'S0':[],'S1':[]}
+rec = {'S0':[],'S1':[]}
 for train, test in cv:
     x_train, y_train = x.iloc[train,:], y.iloc[train]
     x_test, y_test = x.iloc[test,:], y.iloc[test]
+    clf.fit(x_train, y_train)
+    y_p=clf.predict(x_test)
+    cm = confusion_matrix(y_test, y_p)
+    prec['S0'].append(cm[0,0]/(cm[0,0]+cm[1,0]))
+    prec['S1'].append(cm[1,1]/(cm[0,1]+cm[1,1]))
+    rec['S0'].append(cm[0,0]/(cm[0,0]+cm[0,1]))
+    rec['S1'].append(cm[1,1]/(cm[1,0]+cm[1,1]))
 
-    clfgs.fit(x_train, y_train)
-    pr = clfgs.predict_proba(x_test)[:,1]
-    scores_reg.append(clfgs.score(x_test, y_test))
-    precision, recall, thres = precision_recall_curve(y_test, clfgs.predict(x_test))
-    aucs_reg.append(auc(recall, precision))
+print("For 0:")
+print("Prec = %s, Rec = %s"%(sp.mean(prec['S0']), sp.mean(rec['S0'])))
+print("For 1:")
+print("Prec = %s, Rec = %s"%(sp.mean(prec['S1']), sp.mean(rec['S1'])))
 
-    forest.fit(x_train, y_train)
-    pr = forest.predict_proba(x_test)[:,1]
-    scores_for.append(forest.score(x_test, y_test))
-    precision, recall, thres = precision_recall_curve(y_test, forest.predict(x_test))
-    aucs_for.append(auc(recall, precision))
-
-    x_total = sp.vstack((clfgs.predict(x_test),forest.predict(x_test))).transpose()
-    y_total = y_test
-    cv1 = KFold(n=len(x_total), n_folds=5)
-    scoresf = []
-    aucsf=[]
-    for train1, test1 in cv1:
-        x_train_total = x_total[train1,:]
-        y_train_total = y_total[train1]
-        x_test_total = x_total[test1,:]
-        y_test_total = y_total[test1]
-        clfgs.fit(x_train_total, y_train_total)
-        pr = clfgs.predict_proba(x_test_total)[:,1]
-        scoresf.append(clfgs.score(x_test_total, y_test_total))
-        precision, recall, thres = precision_recall_curve(y_test_total, clfgs.predict(x_test_total))
-        aucsf.append(auc(recall, precision))
-    scores.append(sp.mean(scoresf))
-    aucs.append(sp.mean(aucsf))
-
-print("Logistic regression")    
-print("Score = %s, Auc = %s"%(sp.mean(scores_reg), sp.mean(aucs_reg)))
-print("Random forest")    
-print("Score = %s, Auc = %s"%(sp.mean(scores_for), sp.mean(aucs_for)))
-print("Total")    
-print("Score = %s, Auc = %s"%(sp.mean(scores), sp.mean(aucs)))
