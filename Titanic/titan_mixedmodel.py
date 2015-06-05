@@ -99,6 +99,9 @@ xt = (xt-sp.mean(xt))/sp.std(xt)
 
 clf = LogisticRegressionCV()
 
+params={'penalty':['l1','l2'], 'dual':[True,False], 'C': sp.lospace(-4,2,10), 'fit_intercept':[True, False], 'solver':['newton-cg','lbfgs','liblinear']}
+
+clf = grid_search.GridSearchCV(clf,params)
 print("Common:")
 
 cv = StratifiedKFold(y, n_folds=10)
