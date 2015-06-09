@@ -201,5 +201,5 @@ print('C = %s'%(clf.C_))
 ##print("Prec = %s, Rec = %s"%(sp.mean(prec['S1']), sp.mean(rec['S1'])))
 ##print("Score = %s, Min score = %s"%(sp.mean(scores), min_score))
 
-dfr = pd.DataFrame({"PassengerId":dft.PassengerId, "Survived":y_p})
-dfr.to_csv('c:\\Users\\Basov_il\\Documents\\GitHub\\ML-tasks\\Titanic\\titanic_res.csv', index=False, columns=['PassengerId','Survived'])
+##dfr = pd.DataFrame({"PassengerId":dft.PassengerId, "Survived":y_p})
+##dfr.to_csv('c:\\Users\\Basov_il\\Documents\\GitHub\\ML-tasks\\Titanic\\titanic_res.csv', index=False, columns=['PassengerId','Survived'])
