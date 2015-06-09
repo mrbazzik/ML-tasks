@@ -43,9 +43,9 @@ def prepareData(df):
 ##        title = i[:len(i)-1]
 ##        df['Title_'+title] = (df.Title==title).astype(int)
         
-    df['TitleGroup_Common']=df.Title.map(lambda x: 1 if x in common else 0)
-    df['TitleGroup_Arist']=df.Title.map(lambda x: 1 if x in arist else 0)
-    df['TitleGroup_Military']=df.Title.map(lambda x: 1 if x in military else 0)
+##    df['TitleGroup_Common']=df.Title.map(lambda x: 1 if x in common else 0)
+##    df['TitleGroup_Arist']=df.Title.map(lambda x: 1 if x in arist else 0)
+##    df['TitleGroup_Military']=df.Title.map(lambda x: 1 if x in military else 0)
                 
  
 ##    dum = pd.get_dummies(df.Title, prefix='Title')
@@ -71,7 +71,7 @@ train_data = df.values
 
 imputer = Imputer(missing_values=-1)
 
-model = RandomForestClassifier(n_estimators=300)
+model = RandomForestClassifier(n_estimators=100)
 
 pipeline = Pipeline([('imp',imputer),('clf',model)])
 params = {'clf__max_features':[0.5,1], 'clf__max_depth':[5, None], 'imp__strategy': ['mean','median']}
@@ -81,6 +81,9 @@ gs.fit(train_data[:,2:], train_data[:,0])
 print(gs.best_score_)
 print(gs.best_params_)
 
+cur_scores = gs.grid_scores_[0].cv_validation_scores.tolist()
+print(cur_scores)
+stop
 df.Age = df.Age.map(lambda x: df.Age.median() if x==-1 else x)
 ##print('Score = %s'%(gs.best_score_))
 train_data = df.values
