@@ -2,5 +2,7 @@
 "TRAIN_DATA_PATH" : "./train_data",
 "MODEL_PATH" : "./model",
 "TEST_DATA_PATH" : "./test_data",
-"SUBMISSION_PATH" : "./submission"
+"SUBMISSION_PATH" : "./submission",
+"SEED": 1
+
 }
