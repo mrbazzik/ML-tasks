@@ -9,6 +9,7 @@ from sklearn.preprocessing import Imputer
 from sklearn.pipeline import Pipeline
 from scipy  import stats
 from sklearn import preprocessing
+from sklearn.decomposition import PCA
 import re
 
 def reFind(str, x, na):
@@ -19,7 +20,8 @@ def reFind(str, x, na):
         return ar[0]
 
 def prepareData(df):
-
+    
+    print('cleaning features...')
     scaler = preprocessing.StandardScaler()
 
     ##-- Cabin --
@@ -67,7 +69,7 @@ def prepareData(df):
     fare_med = pd.pivot_table(df,values='Fare', index='Pclass', aggfunc='median')
     df.Fare = df[['Fare','Pclass']].apply(lambda x: fare_med[x.Pclass] if pd.isnull(x.Fare) else x.Fare, 1)
 
-    df['FareScaled'] = scaler.fit_transform(df.Fare)
+##    df['FareScaled'] = scaler.fit_transform(df.Fare)
 
     df['FareBin'] = pd.qcut(df.Fare,5)
     df.FareBin = pd.factorize(df.FareBin)[0]
@@ -86,7 +88,7 @@ def prepareData(df):
     df.loc[unknownAge.index,'Age'] = rfr.predict(x_test)
 
     
-    df['AgeScaled'] = scaler.fit_transform(df.Age)
+##    df['AgeScaled'] = scaler.fit_transform(df.Age)
 
     df['AgeBin'] = pd.qcut(df.Age,5)
     df.AgeBin = pd.factorize(df.AgeBin)[0]
@@ -138,11 +140,38 @@ def prepareData(df):
 
 
     ##-- new features --
+    print('making new features...')
     df['FamilySize'] = df.Parch+df.SibSp
     
     df['FamilyId'] = df[['FamilySize','Surname']].apply(lambda x: x.Surname+str(x.FamilySize),1)
     df.FamilyId = pd.factorize(df.FamilyId)[0]
-    
+
+    columns = ['Pclass','Sex','SibSp','Parch','CabinFactor', 'CabinLetterFactor','CabinNumber','EmbarkedFactor','Fare','Age','NameLen','TitleBin','TicketPrefix','TicketNumber','TicketNumberLen','FamilySize','FamilyId']
+    for i,iel in enumerate(columns):
+        for j,jel in enumerate(columns):
+            if i < j:
+                df[iel+"+"+jel] = df[iel]+df[jel]
+            if i <= j:
+                df[iel+"*"+jel] = df[iel]*df[jel]
+            if i != j:
+                df[iel+"/"+jel] = df[iel]/df[jel].astype(float)
+                df[iel+"-"+jel] = df[iel]-df[jel]
+                
+
+    ##-- check correlated features --
+    print('deleting correlated features...')
+    df_corr = df.corr(method = 'spearman')
+    mask = sp.ones(df_corr.columns.size) - sp.eye(df_corr.columns.size)
+    df_corr = df_corr*mask
+    dels=[]
+    for i in df_corr.columns:
+        if i in dels:
+            continue
+        inds = df_corr.loc[abs(df_corr[i])>=0.98,i].index.tolist()
+        for ind in inds:
+            if ind not in dels:
+                dels.append(ind)
+    df = df.drop(dels,1)
     return df
 
 config = js.loads(open('../SETTINGS.json').read())
