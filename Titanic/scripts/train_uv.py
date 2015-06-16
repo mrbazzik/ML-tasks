@@ -126,11 +126,11 @@ def prepareData(df):
     
 
     ##-- Ticket --
-    df['TicketPrefix'] = df.Ticket.map(lambda x: reFind("([a-zA-z\.\/]+)", x, ''))
-    df['TicketPrefix'] = df.TicketPrefix.map(lambda x: re.sub("[\.\/]",'',x))
-    dum = pd.get_dummies(df.TicketPrefix, prefix='TicketPrefix')
-    df = pd.concat([df,dum],1)
-    df.TicketPrefix = pd.factorize(df.TicketPrefix)[0]
+##    df['TicketPrefix'] = df.Ticket.map(lambda x: reFind("([a-zA-z\.\/]+)", x, ''))
+##    df['TicketPrefix'] = df.TicketPrefix.map(lambda x: re.sub("[\.\/]",'',x))
+##    dum = pd.get_dummies(df.TicketPrefix, prefix='TicketPrefix')
+##    df = pd.concat([df,dum],1)
+##    df.TicketPrefix = pd.factorize(df.TicketPrefix)[0]
 
     df['TicketNumber'] = df.Ticket.map(lambda x: reFind("([\d]+$)", x, '0')).astype(int)
     df['TicketNumberLen'] = df.TicketNumber.map(lambda x: len(str(x))).astype(int)
@@ -147,41 +147,41 @@ def prepareData(df):
     df['FamilyId'] = df[['FamilySize','Surname']].apply(lambda x: x.Surname+str(x.FamilySize),1)
     df.FamilyId = pd.factorize(df.FamilyId)[0]
 
-    columns = ['Pclass','Sex','SibSp','Parch','CabinFactor', 'CabinLetterFactor','CabinNumber','EmbarkedFactor','Fare','Age','NameLen','TitleBin','TicketPrefix','TicketNumber','TicketNumberLen','FamilySize','FamilyId']
-    for i,iel in enumerate(columns):
-        for j,jel in enumerate(columns):
-            if i < j:
-                df[iel+"+"+jel] = df[iel]+df[jel]
-            if i <= j:
-                df[iel+"*"+jel] = df[iel]*df[jel]
-            if i != j:
-                df[iel+"/"+jel] = df[iel]/df[jel].astype(float)
-                df[iel+"-"+jel] = df[iel]-df[jel]
-
+##    columns = ['Pclass','Sex','SibSp','Parch','CabinFactor', 'CabinLetterFactor','CabinNumber','EmbarkedFactor','Fare','Age','NameLen','TitleBin','TicketPrefix','TicketNumber','TicketNumberLen','FamilySize','FamilyId']
+##    for i,iel in enumerate(columns):
+##        for j,jel in enumerate(columns):
+##            if i < j:
+##                df[iel+"+"+jel] = df[iel]+df[jel]
+##            if i <= j:
+##                df[iel+"*"+jel] = df[iel]*df[jel]
+##            if i != j:
+##                df[iel+"/"+jel] = df[iel]/df[jel].astype(float)
+##                df[iel+"-"+jel] = df[iel]-df[jel]
+##
     y = df.Survived
-
+##
     df = df.drop(['Cabin', 'Embarked', 'Name', 'Ticket', 'CabinLetter', 'Title', 'Surname','PassengerId','Survived'],1)
-    
-    have_null = sp.sum(pd.isnull(df))
-    df = df.drop(have_null[have_null>0].index.tolist(),1)
-
-    have_inf = [k for k in df.columns if sp.sum(sp.isinf(df[k]))>0]
-    df = df.drop(have_inf,1)
+##    
+##    have_null = sp.sum(pd.isnull(df))
+##    df = df.drop(have_null[have_null>0].index.tolist(),1)
+##
+##    have_inf = [k for k in df.columns if sp.sum(sp.isinf(df[k]))>0]
+##    df = df.drop(have_inf,1)
         
     ##-- check correlated features --
     print('deleting correlated features...')
-##    df_corr = df.corr(method = 'spearman')
-##    mask = sp.ones(df_corr.columns.size) - sp.eye(df_corr.columns.size)
-##    df_corr = df_corr*mask
-##    dels=[]
-##    for i in df_corr.columns:
-##        if i in dels:
-##            continue
-##        inds = df_corr.loc[abs(df_corr[i])>=0.98,i].index.tolist()
-##        for ind in inds:
-##            if ind not in dels:
-##                dels.append(ind)
-##    df = df.drop(dels,1)
+    df_corr = df.corr(method = 'spearman')
+    mask = sp.ones(df_corr.columns.size) - sp.eye(df_corr.columns.size)
+    df_corr = df_corr*mask
+    dels=[]
+    for i in df_corr.columns:
+        if i in dels:
+            continue
+        inds = df_corr.loc[abs(df_corr[i])>=0.98,i].index.tolist()
+        for ind in inds:
+            if ind not in dels:
+                dels.append(ind)
+    df = df.drop(dels,1)
 
     
     ##-- PCA --
@@ -207,7 +207,21 @@ df_full = df_full.drop('index',1)
 
 df_full = prepareData(df_full)
 df = df_full.loc[df_full.Survived.notnull(),:]
+
+##colsG60 = ['Title_Mr', 'Sex/Pclass', 'Sex/Age', 'Sex/TicketNumberLen',
+##       'Parch-TitleBin', 'CabinFactor-EmbarkedFactor', 'CabinFactor+TitleBin',
+##       'Fare-Age', 'Age*TitleBin', 'NameLen*TitleBin', 'TitleBin*TicketPrefix',
+##       'TitleBin*FamilyId']
+##colsG50 = ['Sex', 'Title_Mr', 'Sex/Pclass', 'Sex-SibSp', 'Sex/Age', 'Sex+NameLen',
+##       'Sex/NameLen', 'Sex*TicketNumber', 'Sex/TicketNumberLen',
+##       'SibSp-TitleBin', 'Parch-TitleBin', 'CabinFactor-EmbarkedFactor',
+##       'CabinFactor+TitleBin', 'Fare-Age', 'Fare*TitleBin', 'Age*TitleBin',
+##       'NameLen*TitleBin', 'TitleBin*TicketPrefix', 'TitleBin*FamilyId']
+##
+##colsG70 = ['Title_Mr', 'Sex/TicketNumberLen', 'CabinFactor+TitleBin', 'Fare-Age',
+##       'Age*TitleBin', 'TitleBin*TicketPrefix']
 x_train = df.drop("Survived",1)
+##x_train = df.loc[:,colsG60]
 y_train = df.Survived
 
 x_train, x_test, y_train, y_test = train_test_split(x_train, y_train, test_size=0.2, random_state=seed)
@@ -227,7 +241,6 @@ print(gs.best_params_)
 model = gs.best_estimator_
 fi = model.feature_importances_
 
-stop
 
 c = [[df.columns[2+i], gs.best_estimator_.feature_importances_[i]] for i in range(0,len(df.columns)-2)]
 d = sorted(c, key=lambda x: x[1],reverse=True)
