@@ -56,7 +56,7 @@ def prepareData(df):
     df['CabinNumber'] = df.Cabin.map(lambda x: reFind("([0-9]+)", x, '0')).astype(int)
     ##df['CabinNumberBin'] = pd.qcut(df.CabinNumber,3)
     ##df.CabinNumberBin = pd.factorize(df.CabinNumberBin)[0]
-
+    
     ##-- Embarked --
     df.Embarked = df.Embarked.fillna(df.Embarked.mode()[0])
 
@@ -64,16 +64,17 @@ def prepareData(df):
 
     dum = pd.get_dummies(df.Embarked,prefix='Embarked')
     df = pd.concat([df, dum], 1)
-
+    
     ##-- Fare --
     fare_med = pd.pivot_table(df,values='Fare', index='Pclass', aggfunc='median')
-    df.Fare = df[['Fare','Pclass']].apply(lambda x: fare_med[x.Pclass] if pd.isnull(x.Fare) else x.Fare, 1)
+    
+    df.Fare = df[['Fare','Pclass']].apply(lambda x: fare_med[int(x.Pclass)] if pd.isnull(x.Fare) else x.Fare, 1)
 
 ##    df['FareScaled'] = scaler.fit_transform(df.Fare)
-
+    
     df['FareBin'] = pd.qcut(df.Fare,5)
     df.FareBin = pd.factorize(df.FareBin)[0]
-
+    
     ##-- Age --
     df['AgeNA'] = df.Age.isnull()
     
@@ -156,22 +157,38 @@ def prepareData(df):
             if i != j:
                 df[iel+"/"+jel] = df[iel]/df[jel].astype(float)
                 df[iel+"-"+jel] = df[iel]-df[jel]
-                
 
+    y = df.Survived
+
+    df = df.drop(['Cabin', 'Embarked', 'Name', 'Ticket', 'CabinLetter', 'Title', 'Surname','PassengerId','Survived'],1)
+    
+    have_null = sp.sum(pd.isnull(df))
+    df = df.drop(have_null[have_null>0].index.tolist(),1)
+
+    have_inf = [k for k in df.columns if sp.sum(sp.isinf(df[k]))>0]
+    df = df.drop(have_inf,1)
+        
     ##-- check correlated features --
     print('deleting correlated features...')
-    df_corr = df.corr(method = 'spearman')
-    mask = sp.ones(df_corr.columns.size) - sp.eye(df_corr.columns.size)
-    df_corr = df_corr*mask
-    dels=[]
-    for i in df_corr.columns:
-        if i in dels:
-            continue
-        inds = df_corr.loc[abs(df_corr[i])>=0.98,i].index.tolist()
-        for ind in inds:
-            if ind not in dels:
-                dels.append(ind)
-    df = df.drop(dels,1)
+##    df_corr = df.corr(method = 'spearman')
+##    mask = sp.ones(df_corr.columns.size) - sp.eye(df_corr.columns.size)
+##    df_corr = df_corr*mask
+##    dels=[]
+##    for i in df_corr.columns:
+##        if i in dels:
+##            continue
+##        inds = df_corr.loc[abs(df_corr[i])>=0.98,i].index.tolist()
+##        for ind in inds:
+##            if ind not in dels:
+##                dels.append(ind)
+##    df = df.drop(dels,1)
+
+    
+    ##-- PCA --
+##    print('making pca...')
+##    pca=PCA(0.9999999999)
+##    Xtrans = pca.fit_transform(df)
+    df = pd.concat([df, y],1)
     return df
 
 config = js.loads(open('../SETTINGS.json').read())
@@ -189,9 +206,7 @@ df_full = df_full.drop('index',1)
 
 
 df_full = prepareData(df_full)
-stop
-
-
+df = df_full.loc[df_full.Survived.notnull(),:]
 x_train = df.drop("Survived",1)
 y_train = df.Survived
 
@@ -202,10 +217,18 @@ model = RandomForestClassifier(n_estimators=300, random_state=seed)
 params = {'max_features':[0.5,1,'auto'], 'max_depth':[5, None]}
 
 gs = GridSearchCV(model, params, cv=StratifiedShuffleSplit(y_train, n_iter=10, test_size=0.2, random_state=seed))
+print('running gridsearch...')
+
 gs.fit(x_train, y_train)
 print("Best Grid search results:")
 print(gs.best_score_)
 print(gs.best_params_)
+
+model = gs.best_estimator_
+fi = model.feature_importances_
+
+stop
+
 c = [[df.columns[2+i], gs.best_estimator_.feature_importances_[i]] for i in range(0,len(df.columns)-2)]
 d = sorted(c, key=lambda x: x[1],reverse=True)
 for i in d:
