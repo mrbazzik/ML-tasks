@@ -19,7 +19,7 @@ def reFind(str, x, na):
     else:
         return ar[0]
 
-def prepareData(df):
+def prepareData(df, seed):
     
     print('cleaning features...')
     scaler = preprocessing.StandardScaler()
@@ -84,7 +84,7 @@ def prepareData(df):
     x_train = knownAge.drop(dropCol,1)
     y_train = knownAge.Age
     x_test = unknownAge.drop(dropCol,1)
-    rfr = RandomForestRegressor(n_estimators=2000, n_jobs=-1)
+    rfr = RandomForestRegressor(n_estimators=2000, n_jobs=-1, random_state = seed)
     rfr.fit(x_train,y_train)
     df.loc[unknownAge.index,'Age'] = rfr.predict(x_test)
 
@@ -170,18 +170,18 @@ def prepareData(df):
         
     ##-- check correlated features --
     print('deleting correlated features...')
-    df_corr = df.corr(method = 'spearman')
-    mask = sp.ones(df_corr.columns.size) - sp.eye(df_corr.columns.size)
-    df_corr = df_corr*mask
-    dels=[]
-    for i in df_corr.columns:
-        if i in dels:
-            continue
-        inds = df_corr.loc[abs(df_corr[i])>=0.98,i].index.tolist()
-        for ind in inds:
-            if ind not in dels:
-                dels.append(ind)
-    df = df.drop(dels,1)
+##    df_corr = df.corr(method = 'spearman')
+##    mask = sp.ones(df_corr.columns.size) - sp.eye(df_corr.columns.size)
+##    df_corr = df_corr*mask
+##    dels=[]
+##    for i in df_corr.columns:
+##        if i in dels:
+##            continue
+##        inds = df_corr.loc[abs(df_corr[i])>=0.98,i].index.tolist()
+##        for ind in inds:
+##            if ind not in dels:
+##                dels.append(ind)
+##    df = df.drop(dels,1)
 
     
     ##-- PCA --
@@ -205,7 +205,7 @@ df_full = df_full.reset_index()
 df_full = df_full.drop('index',1)
 
 
-df_full = prepareData(df_full)
+df_full = prepareData(df_full, seed)
 df = df_full.loc[df_full.Survived.notnull(),:]
 
 ##colsG60 = ['Title_Mr', 'Sex/Pclass', 'Sex/Age', 'Sex/TicketNumberLen',
@@ -220,8 +220,18 @@ df = df_full.loc[df_full.Survived.notnull(),:]
 ##
 ##colsG70 = ['Title_Mr', 'Sex/TicketNumberLen', 'CabinFactor+TitleBin', 'Fare-Age',
 ##       'Age*TitleBin', 'TitleBin*TicketPrefix']
-x_train = df.drop("Survived",1)
-##x_train = df.loc[:,colsG60]
+
+cols = ['TitleBin', 'Title_Mr', 'TicketNumber', 'Sex', 'Age', 'Fare', 'FamilyId', 'NameLen', 'TicketNumberBin', 'AgeBin',
+        'FamilySize', 'Pclass', 'TicketNumberFD', 'CabinNumber', 'CabinFactor']
+##, 'SibSp']
+##, 'Title_Miss']
+##        , 'FareBin', 'TicketNumberLen', 'Title_Mrs']
+##        'CabinLetterFactor', 'CabinLetter_U', 'CabinLetterBin', 'Parch', 'CabinNA', 'EmbarkedFactor', 'AgeNA', 'Embarked_S', 'Embarked_C', 'Title_Master']
+##        'Embarked_Q', 'Title_Rev', 'CabinLetter_E', 'CabinLetter_D', 'CabinLetter_C', 'Title_Sir', 'CabinLetter_A', 'CabinLetter_B', 'Title_Dr', 'CabinLetter_G',
+##        'CabinLetter_F', 'Title_Lady', 'CabinLetter_T']
+
+##x_train = df.drop("Survived",1)
+x_train = df.loc[:,cols]
 y_train = df.Survived
 
 x_train, x_test, y_train, y_test = train_test_split(x_train, y_train, test_size=0.2, random_state=seed)
@@ -242,7 +252,7 @@ model = gs.best_estimator_
 fi = model.feature_importances_
 
 
-c = [[df.columns[2+i], gs.best_estimator_.feature_importances_[i]] for i in range(0,len(df.columns)-2)]
+c = [[x_train.columns[i], gs.best_estimator_.feature_importances_[i]] for i in range(0,len(x_train.columns))]
 d = sorted(c, key=lambda x: x[1],reverse=True)
 for i in d:
 	print("%s - %s"%(i[0],i[1]))
