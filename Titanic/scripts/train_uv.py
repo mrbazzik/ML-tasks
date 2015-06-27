@@ -206,6 +206,7 @@ df_full = df_full.drop('index',1)
 
 
 df_full = prepareData(df_full, seed)
+stop
 df = df_full.loc[df_full.Survived.notnull(),:]
 
 ##colsG60 = ['Title_Mr', 'Sex/Pclass', 'Sex/Age', 'Sex/TicketNumberLen',
