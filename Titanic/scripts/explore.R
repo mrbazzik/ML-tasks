@@ -157,10 +157,15 @@ df<-select(df,-c(PassengerId,Pclass,Name,Sex,Age,SibSp,Parch,Ticket,Cabin,Embark
 mylogit<-glm(Survived~.,data=df,family="binomial")
 summary(mylogit)
 
+sur<-predict(mylogit,df,type="response")
+head(sur)
+res<-data.frame(PassengerId=ids, Survived=as.numeric(sur>=0.5))
+write.csv(res,"result.csv",row.names=F)
 ## HCLUST
 
 setwd("c:\\Users\\Basov_il\\Documents\\GitHub\\ML-tasks\\Titanic\\test_data\\")
 df_test<-read.csv("test.csv")
+df<-df_test
 
 df<-select(df,-Survived)
 df<-rbind(df,df_test)
